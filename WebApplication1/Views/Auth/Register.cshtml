@@ -1,0 +1,145 @@
+﻿@model WebApplication1.ViewModel.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+    Layout = null; // hoặc dùng _Layout nếu muốn
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Đăng ký</title>
+    <link href="~/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+    <link href="~/assets/css/main.css" rel="stylesheet" />
+    <style>
+        body {
+            background: #f6f9ff;
+        }
+
+        .auth-wrapper {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+
+        .auth-card {
+            border: 1px solid #eef2f7;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,.05);
+        }
+
+        .brand {
+            font-weight: 800;
+            letter-spacing: .3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container auth-wrapper">
+        <div class="row justify-content-center w-100">
+            <div class="col-sm-10 col-md-8 col-lg-5">
+                <div class="card auth-card">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="mb-4 text-center">
+                            <a href="~/" class="text-decoration-none"><span class="brand h3 text-primary">Yummy</span></a>
+                            <div class="text-secondary mt-1">Tạo tài khoản mới</div>
+                        </div>
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+
+                        <form asp-action="Register" asp-controller="Auth" method="post" novalidate>
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label asp-for="Username" class="form-label">Tên đăng nhập</label>
+                                <input asp-for="Username" class="form-control" autocomplete="username" />
+                                <span asp-validation-for="Username" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Password" class="form-label">Mật khẩu</label>
+                                <div class="input-group">
+                                    <input asp-for="Password" class="form-control" id="passwordInput" autocomplete="new-password" />
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePwd1"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label">Nhập lại mật khẩu</label>
+                                <div class="input-group">
+                                    <input asp-for="ConfirmPassword" class="form-control" id="confirmInput" autocomplete="new-password" />
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePwd2"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="FullName" class="form-label">Họ tên</label>
+                                <input asp-for="FullName" class="form-control" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label">Email</label>
+                                <input asp-for="Email" class="form-control" autocomplete="email" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label asp-for="Phone" class="form-label">Số điện thoại</label>
+                                <input asp-for="Phone" class="form-control" autocomplete="tel" />
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100" id="btnRegister">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" id="btnSpinner"></span>
+                                Đăng ký
+                            </button>
+
+                            <div class="text-center mt-3">
+                                <span class="text-secondary small">Đã có tài khoản?</span>
+                                <a asp-action="Login" asp-controller="Auth" class="small ms-1">Đăng nhập</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script src="~/lib/jquery/dist/jquery.min.js"></script>
+        <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+        <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    }
+
+    <script src="~/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const toggle1 = document.getElementById('togglePwd1');
+        const toggle2 = document.getElementById('togglePwd2');
+        toggle1?.addEventListener('click', function () {
+            const ip = document.getElementById('passwordInput');
+            const icon = this.querySelector('i');
+            if (!ip) return;
+            ip.type = ip.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('bi-eye'); icon.classList.toggle('bi-eye-slash');
+        });
+        toggle2?.addEventListener('click', function () {
+            const ip = document.getElementById('confirmInput');
+            const icon = this.querySelector('i');
+            if (!ip) return;
+            ip.type = ip.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('bi-eye'); icon.classList.toggle('bi-eye-slash');
+        });
+
+        // Loading state
+        const form = document.querySelector('form');
+        form?.addEventListener('submit', function () {
+            document.getElementById('btnSpinner')?.classList.remove('d-none');
+            document.getElementById('btnRegister')?.setAttribute('disabled', 'disabled');
+        });
+    </script>
+</body>
+</html>

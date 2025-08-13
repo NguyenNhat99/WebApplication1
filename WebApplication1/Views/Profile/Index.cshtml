@@ -1,0 +1,142 @@
+﻿@model WebApplication1.ViewModel.UserProfileVM
+@{
+    ViewData["Title"] = "Tài khoản của tôi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var toast = TempData["Toast"] as string;   
+    var error = TempData["Error"] as string;
+}
+
+<div class="container py-4" style="max-width: 900px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h4 mb-0">Tài khoản của tôi</h1>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index","Home")">
+            <i class="bi bi-house"></i> Về trang chủ
+        </a>
+    </div>
+
+    @if (toast != null)
+    {
+        <div class="alert alert-success">@toast</div>
+    }
+    @if (error != null)
+    {
+        <div class="alert alert-danger">@Html.Raw(error)</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img src="~/assets/img/profile.png" class="rounded-circle" style="width:96px;height:96px;object-fit:cover;" alt="avatar">
+                        <h5 class="mt-2 mb-0">@Model.FullName</h5>
+                        <div class="text-muted">@Model.Username</div>
+                    </div>
+
+                    <hr />
+
+                    <h6 class="mb-3">Đổi mật khẩu</h6>
+                    <form id="form_changePW">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" id="iduser" value="@Model.UserId" />
+                        <div class="mb-2">
+                            <label class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control" id="currentPassword" required />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="newPassword" minlength="6" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nhập lại mật khẩu mới</label>
+                            <input type="password" class="form-control" id="confirmNewPassword" minlength="6" required />
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" onclick="ChangePassword()">
+                            <i class="bi bi-shield-lock"></i> Đổi mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="mb-3">Thông tin cá nhân</h6>
+
+                    @using (Html.BeginForm("Update", "Profile", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="UserId" value="@Model.UserId" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-control" value="@Model.Username" disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="FullName" class="form-label">Họ và tên</label>
+                            <input id="FullName" name="FullName" class="form-control" value="@Model.FullName" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Email" class="form-label">Email</label>
+                            <input id="Email" name="Email" type="email" class="form-control" value="@Model.Email" readonly />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Phone" class="form-label">Số điện thoại</label>
+                            <input id="Phone" name="Phone" class="form-control" value="@Model.Phone" />
+                        </div>
+                        <div class="form-text">Để trống nếu chưa muốn cập nhật.</div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Lưu thay đổi
+                            </button>
+                            <a href="@Url.Action("Index","Home")" class="btn btn-outline-secondary">Huỷ</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="af-form" method="post">@Html.AntiForgeryToken()</form>
+
+<script>
+    function anti() {
+        const t = document.querySelector('#af-form input[name="__RequestVerificationToken"]');
+        return t ? t.value : '';
+    }
+
+    async function ChangePassword() {
+        const id = document.getElementById('iduser').value;
+        const cur = document.getElementById('currentPassword').value;
+        const neo = document.getElementById('newPassword').value;
+        const cf = document.getElementById('confirmNewPassword').value;
+
+        if (!cur || !neo || !cf) { alert('Không được để trống.'); return; }
+        if (neo !== cf) { alert('Mật khẩu mới không khớp.'); return; }
+        if (neo.length < 6) { alert('Mật khẩu mới tối thiểu 6 ký tự.'); return; }
+
+        const res = await fetch('@Url.Action("ChangePassword", "Profile")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': anti()
+            },
+            body: JSON.stringify({ userId: parseInt(id), currentPassword: cur, newPassword: neo })
+        });
+
+        if (!res.ok) { alert('Lỗi kết nối.'); return; }
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message || 'Đổi mật khẩu thành công.');
+            document.getElementById('form_changePW').reset();
+        } else {
+            alert(data.message || 'Không đổi được mật khẩu.');
+        }
+    }
+</script>

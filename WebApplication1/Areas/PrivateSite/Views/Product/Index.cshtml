@@ -1,0 +1,219 @@
+﻿@using WebApplication1.Models
+@model List<Food>
+
+@{
+    ViewData["Title"] = "Quản lý sản phẩm";
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+
+    int page = ViewBag.Page ?? 1;
+    int noOfPages = ViewBag.NoOfPages ?? 1;
+    int displayPage = ViewBag.DisplayPage ?? 0;
+    string search = ViewBag.Search as string ?? "";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 d-flex align-items-stretch">
+            <div class="card w-100">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6">
+                            <h5 class="card-title fw-600 mb-4">Quản lý sản phẩm</h5>
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            @using (Html.BeginForm("Index", "Product", FormMethod.Get, new { area = "PrivateSite" }))
+                            {
+                                <div class="searchForm d-flex gap-2">
+                                    <input class="form-control" name="name" value="@search" placeholder="Tìm kiếm ..." />
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="ti ti-search"></i> Tìm
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-post text-nowrap mb-0 align-middle">
+                            <thead class="text-dark fs-4">
+                                <tr>
+                                    <th><h6 class="fw-600 mb-0">ID</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Tên sản phẩm</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Giá bán</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Trạng thái</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Lệnh</h6></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        <tr id="row-@item.CategoryId">
+                                            <td><h6 class="fw-600 mb-0">@item.FoodId</h6></td>
+                                            <td class="d-flex align-items-center gap-2">
+                                                <img src="@item.ImageUrl" alt="@item.Name" style="width:40px;height:40px;object-fit:cover;border-radius:6px;" />
+                                                <div>
+                                                    <h6 class="fw-600 mb-1">@item.Name</h6>
+                                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                                    {
+                                                        <small class="text-muted">@item.Description</small>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <h6 class="fw-600 mb-1">
+                                                    @string.Format(new System.Globalization.CultureInfo("vi-VN"), "{0:c0}", item.Price)
+                                                </h6>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(item.IsActive ? "bg-success" : "bg-danger") rounded-3 fw-600" id="status-@item.CategoryId">
+                                                    @(item.IsActive ? "Đang bán" : "Ngừng bán")
+                                                </span>
+                                            </td>
+                                            <td class="d-flex gap-2">
+                                                <a href="@Url.Action("Edit","Product", new { area="PrivateSite", id = item.FoodId })" class="btn btn-primary">
+                                                    Sửa
+                                                </a>
+                                                <button type="button"
+                                                        class="btn @(item.IsActive ? "btn-warning" : "btn-default")"
+                                                        onclick="toggleStatus(@item.CategoryId)">
+                                                    @(item.IsActive ? "Ngừng bán" : "Mở bán")
+                                                </button>
+                                                <button type="button" class="btn btn-danger" onclick="deleteItem(@item.FoodId)">Xóa</button>
+
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5">
+                                            Không có sản phẩm nào.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-tools p-5 pt-0 pb-4 m-auto" id="pagination">
+                    @{
+                        int prevPage = page - 1;
+                        if (prevPage <= 0) prevPage = 1;
+                        int nextPage = page + 1;
+                        if (nextPage > noOfPages) nextPage = noOfPages;
+                    }
+
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        <ul class="pagination pagination-sm">
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Product", new { area="PrivateSite", page = prevPage, name = search })">&laquo;</a>
+                            </li>
+                            @for (int i = Math.Max(1, page - 3); i <= Math.Min(noOfPages, page + 3); i++)
+                            {
+                                if (i == page)
+                                {
+                                    <li class="page-item active">
+                                        <a href="@Url.Action("Index","Product", new { area="PrivateSite", page = i, name = search })" class="page-link">@i</a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item">
+                                        <a href="@Url.Action("Index","Product", new { area="PrivateSite", page = i, name = search })" class="page-link">@i</a>
+                                    </li>
+                                }
+                            }
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Product", new { area="PrivateSite", page = nextPage, name = search })">&raquo;</a>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <h5 class="text-center">Sản phẩm hiện tại hết hàng</h5>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Anti-forgery token để dùng cho fetch *@
+<form id="af-form" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+    <script>
+        function getRequestVerificationToken() {
+            const tokenInput = document.querySelector('#af-form input[name="__RequestVerificationToken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+
+        async function toggleStatus(id) {
+            if (!id) return;
+            const confirmMsg = 'Bạn có chắc muốn đổi trạng thái sản phẩm #' + id + ' ?';
+            if (!confirm(confirmMsg)) return;
+
+            const res = await fetch('@Url.Action("ToggleStatus", "Product", new { area = "PrivateSite" })', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: new URLSearchParams({
+                    id: id,
+                    __RequestVerificationToken: getRequestVerificationToken()
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const statusEl = document.getElementById('status-' + id);
+                if (statusEl) {
+                    statusEl.classList.remove('bg-success', 'bg-danger');
+                    statusEl.classList.add(data.status ? 'bg-success' : 'bg-danger');
+                    statusEl.textContent = data.status ? 'Đang bán' : 'Ngừng bán';
+                }
+                // đổi text nút
+                const btn = event.target.closest('button');
+                if (btn) {
+                    btn.classList.remove('btn-warning', 'btn-default');
+                    if (data.status) {
+                        btn.classList.add('btn-warning');
+                        btn.textContent = 'Ngừng bán';
+                    } else {
+                        btn.classList.add('btn-default');
+                        btn.textContent = 'Mở bán';
+                    }
+                }
+            } else {
+                alert('Đổi trạng thái thất bại!');
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!id) return;
+            if (!confirm('Xóa sản phẩm #' + id + ' ?')) return;
+
+            const res = await fetch('@Url.Action("Delete", "Product", new { area = "PrivateSite" })', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: new URLSearchParams({
+                    id: id,
+                    __RequestVerificationToken: getRequestVerificationToken()
+                })
+            });
+
+            if (res.ok) {
+                document.getElementById('row-' + id)?.remove();
+            } else {
+                alert('Xóa thất bại!');
+            }
+        }
+    </script>

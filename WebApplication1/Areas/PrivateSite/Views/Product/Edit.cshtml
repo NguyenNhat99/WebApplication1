@@ -1,0 +1,106 @@
+﻿
+@using WebApplication1.Models
+@model Food
+@{
+    ViewData["Title"] = "Sửa sản phẩm";
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+    var categories = ViewData["Categories"] as List<Category>;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Sửa sản phẩm</h5>
+
+                    @using (Html.BeginForm("Edit", "Product", FormMethod.Post, new { area = "PrivateSite", enctype = "multipart/form-data" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        @Html.HiddenFor(m => m.FoodId)
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên sản phẩm</label>
+                            @Html.TextBoxFor(m => m.Name, new { @class = "form-control", placeholder = "Nhập tên..." })
+                            @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            @Html.TextAreaFor(m => m.Description, 5, 50, new { @class = "form-control", placeholder = "Mô tả..." })
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Giá bán</label>
+                                @Html.TextBoxFor(m => m.Price, new { @class = "form-control", type = "number", step = "1", min = "0" })
+                                @Html.ValidationMessageFor(m => m.Price, "", new { @class = "text-danger" })
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Danh mục</label>
+                                <select name="CategoryId" class="form-select">
+                                    <option value="">-- Chọn danh mục --</option>
+                                    @if (categories != null)
+                                    {
+                                        foreach (var c in categories)
+                                        {
+                                            <option value="@c.Id" selected="@(Model.CategoryId == c.Id)">
+                                                @c.CategoryName
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                                @Html.ValidationMessage("CategoryId", new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label me-3">Trạng thái</label>
+                            <div class="form-check form-switch d-inline-block">
+                                @Html.CheckBoxFor(m => m.IsActive, new { @class = "form-check-input", id = "IsActive" })
+                                <label class="form-check-label" for="IsActive">Đang bán</label>
+                            </div>
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label d-block">Ảnh hiện tại</label>
+                            <img src="@Model.ImageUrl" alt="@Model.Name" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #eee" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tải ảnh mới (tuỳ chọn)</label>
+                            <input type="file" class="form-control" name="avatar" accept="image/*" />
+                            <div class="form-text">Nếu chọn ảnh mới, ảnh cũ sẽ được thay thế.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <!-- THỨ TỰ QUAN TRỌNG: checkbox TRƯỚC -->
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="removeImage"
+                                       name="removeImage"
+                                       value="true" />
+                                <!-- hidden SAU -->
+                                <input type="hidden" name="removeImage" value="false" />
+                                <label class="form-check-label" for="removeImage">
+                                    Xoá ảnh hiện tại, dùng ảnh mặc định
+                                </label>
+                            </div>
+                        </div>
+
+
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                            <a href="@Url.Action("Index","Product", new { area="PrivateSite" })" class="btn btn-secondary">Quay lại</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

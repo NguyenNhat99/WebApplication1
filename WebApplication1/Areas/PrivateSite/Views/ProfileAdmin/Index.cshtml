@@ -1,0 +1,164 @@
+﻿@model WebApplication1.ViewModel.AdminProfileVM
+@{
+    ViewData["Title"] = "Thông tin tài khoản";
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+    var toast = TempData["Toast"] as string;   // đọc = consume (sẽ bị xóa sau request)
+    var error = TempData["Error"] as string;
+}
+
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6" style="margin-top:90px;">
+                    <h1>Thông tin tài khoản cá nhân</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href='@Url.Action("Index","Dashboard", new { area="PrivateSite" })'>Dashboard</a></li>
+                        <li class="breadcrumb-item active">Thông tin</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card card-primary card-outline">
+                        <div class="card-body box-profile">
+                            <div class="text-center">
+                                <img class="profile-user-img img-fluid img-circle"
+                                     src="~/images/profile/user-1.jpg"
+                                     alt="User profile picture"
+                                     style="border-radius: 10%;" />
+                            </div>
+                            <h3 class="profile-username text-center">@Model.FullName</h3>
+                            <ul class="list-group list-group-unbordered mb-3">
+                                <li class="list-group-item">
+                                    <b>Nhóm tài khoản: </b><span class="float-right">@Model.GroupName</span>
+                                </li>
+                            </ul>
+
+                            @if (toast != null)
+                            {
+                                <div class="alert alert-success">@toast</div>
+                            }
+                            @if (error != null)
+                            {
+                                <div class="alert alert-danger">@error</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-9">
+                    <div class="card">
+                        <div class="card-header p-2">
+                            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">Thông tin</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">Đổi mật khẩu</button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="tab-content" id="myTabContent">
+                                <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                                    @using (Html.BeginForm("Update", "ProfileAdmin", FormMethod.Post))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                            <input type="hidden" name="UserId" value="@Model.UserId" />
+                                            <div class="form-group row mb-3">
+                                                <label class="col-sm-2 col-form-label">Tên đăng nhập</label>
+                                                <div class="col-sm-10"><input type="text" class="form-control" value="@Model.Username" readonly /></div>
+                                            </div>
+                                            <div class="form-group row mb-3">
+                                                <label class="col-sm-2 col-form-label">Email</label>
+                                            <div class="col-sm-10"><input asp-for="Email" class="form-control" value="@Model.Email" readonly /></div>
+                                            </div>
+                                            <div class="form-group row mb-3">
+                                                <label class="col-sm-2 col-form-label">Họ và tên</label>
+                                                <div class="col-sm-10"><input asp-for="FullName" name="FullName" class="form-control" value="@Model.FullName" required /></div>
+                                            </div>
+                                            <div class="form-group row mb-3">
+                                                <label class="col-sm-2 col-form-label">Số điện thoại</label>
+                                                <div class="col-sm-10"><input asp-for="Phone" name="Phone" class="form-control" value="@Model.Phone" /></div>
+                                            </div>
+                                            <button type="submit" class="btn btn-success">Lưu</button>
+                                    }
+                                </div>
+
+                                <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                                    <form id="form_changePW">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" id="iduser" value="@Model.UserId" />
+                                        <div class="form-group row mb-3">
+                                            <label for="currentPassword" class="col-sm-2 col-form-label">Mật khẩu cũ</label>
+                                            <div class="col-sm-10"><input type="password" class="form-control" id="currentPassword" required /></div>
+                                        </div>
+                                        <div class="form-group row mb-3">
+                                            <label for="newPassword" class="col-sm-2 col-form-label">Mật khẩu mới</label>
+                                            <div class="col-sm-10"><input type="password" class="form-control" id="newPassword" minlength="6" required /></div>
+                                        </div>
+                                        <div class="form-group row mb-3">
+                                            <label for="confirmNewPassword" class="col-sm-2 col-form-label">Nhập lại</label>
+                                            <div class="col-sm-10"><input type="password" class="form-control" id="confirmNewPassword" minlength="6" required /></div>
+                                        </div>
+                                        <button type="button" onclick="ChangePassword()" class="btn btn-success">Lưu</button>
+                                    </form>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</div>
+
+<form id="af-form" method="post">@Html.AntiForgeryToken()</form>
+
+    <script>
+        function anti() {
+            const t = document.querySelector('#af-form input[name="__RequestVerificationToken"]');
+            return t ? t.value : '';
+        }
+
+        async function ChangePassword() {
+            const id = document.getElementById('iduser').value;
+            const cur = document.getElementById('currentPassword').value;
+            const neo = document.getElementById('newPassword').value;
+            const cf = document.getElementById('confirmNewPassword').value;
+
+            if (!cur || !neo || !cf) { alert('Không được để trống'); return; }
+            if (neo !== cf) { alert('Mật khẩu mới không khớp'); return; }
+            if (neo.length < 6) { alert('Mật khẩu mới tối thiểu 6 ký tự'); return; }
+
+            const res = await fetch('@Url.Action("ChangePassword", "ProfileAdmin", new { area = "PrivateSite" })', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': anti() // Anti-Forgery token header
+                },
+                body: JSON.stringify({ userId: parseInt(id), currentPassword: cur, newPassword: neo })
+            });
+
+            if (!res.ok) { alert('Lỗi kết nối'); return; }
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message || 'Đổi mật khẩu thành công');
+                document.getElementById('form_changePW').reset();
+            } else {
+                alert(data.message || 'Không đổi được mật khẩu');
+            }
+        }
+    </script>

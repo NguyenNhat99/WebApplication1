@@ -1,0 +1,243 @@
+﻿@model List<WebApplication1.ViewModel.CartItemVM>
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var fmt = new System.Globalization.CultureInfo("vi-VN");
+    var count = Model?.Sum(x => x.Quantity) ?? 0;
+    var subtotal = Model?.Sum(x => x.Total) ?? 0m;
+
+    var toast = TempData["Toast"] as string;   // đọc = consume (sẽ bị xóa sau request)
+    var error = TempData["Error"] as string;
+}
+
+<style>
+    .cart-thumb {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: .5rem;
+    }
+
+    .qty-input {
+        width: 64px;
+        text-align: center;
+    }
+
+    .sticky-summary {
+        position: sticky;
+        top: 1rem;
+    }
+
+    .empty-state {
+        border: 2px dashed #e9ecef;
+        border-radius: .75rem;
+        padding: 2rem;
+        text-align: center;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <h2 class="mb-0">Giỏ hàng của bạn</h2>
+        <span class="badge text-bg-primary" id="cart-count">@count</span>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="empty-state">
+            <div class="mb-2"><i class="bi bi-bag"></i></div>
+            <h5>Giỏ hàng trống</h5>
+            <p class="text-muted mb-3">Hãy chọn vài món ngon nhé!</p>
+            <a href="@Url.Action("Index","Home")" class="btn btn-primary">
+                <i class="bi bi-shop"></i> Mua ngay
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <div class="col-lg-8">
+
+                @foreach (var it in Model)
+                {
+                    <div class="card shadow-sm mb-3" data-id="@it.FoodId">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@it.ImageUrl" class="cart-thumb" alt="@it.Name" />
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h6 class="mb-1">@it.Name</h6>
+
+                                        @* XÓA MÓN (POST) *@
+                                        <form asp-action="Remove" asp-controller="Cart" method="post" class="ms-2">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@it.FoodId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xoá">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        @* CẬP NHẬT SỐ LƯỢNG *@
+                                        <form asp-action="Update" asp-controller="Cart" method="post" class="d-flex align-items-center gap-2">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@it.FoodId" />
+                                            <div class="input-group input-group-sm" style="max-width:160px;">
+                                                <button class="btn btn-outline-secondary btn-minus" type="button">-</button>
+                                                <input type="number" class="form-control qty-input" name="quantity" min="1" step="1" value="@it.Quantity" />
+                                                <button class="btn btn-outline-secondary btn-plus" type="button">+</button>
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-primary">Cập nhật</button>
+                                        </form>
+
+                                        <div class="text-end">
+                                            <div class="text-muted small">Đơn giá</div>
+                                            <div class="fw-semibold">@string.Format(fmt, "{0:c0}", it.Price)</div>
+                                        </div>
+                                        <div class="text-end" style="min-width:120px;">
+                                            <div class="text-muted small">Thành tiền</div>
+                                            <div class="fw-bold">@string.Format(fmt, "{0:c0}", it.Total)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between mt-3">
+                    <a href="@Url.Action("Index","Home")" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Tiếp tục mua
+                    </a>
+
+                    @* XÓA TOÀN BỘ (POST) *@
+                    <form asp-action="Clear" asp-controller="Cart" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger" id="clear-cart-btn">
+                            <i class="bi bi-trash3"></i> Xóa toàn bộ
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tổng kết -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm sticky-summary">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Tóm tắt đơn hàng</h5>
+
+                        @{
+                            decimal ship = 0m;
+                            decimal discount = 0m;
+                            var grand = subtotal + ship - discount;
+                        }
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tạm tính</span>
+                            <strong id="subtotal">@string.Format(fmt, "{0:c0}", subtotal)</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Mã giảm giá</span>
+                            <span class="text-muted" id="discount-text">-@string.Format(fmt, "{0:c0}", discount)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Phí vận chuyển</span>
+                            <span class="text-success" id="ship-text">
+                                @((ship == 0m) ? "Miễn phí" : string.Format(fmt, "{0:c0}", ship))
+                            </span>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between fs-5">
+                            <span><strong>Tổng cộng</strong></span>
+                            <strong id="cart-total">@string.Format(fmt, "{0:c0}", grand)</strong>
+                        </div>
+
+                        @* CHECKOUT *@
+                        <form asp-action="Checkout" asp-controller="Cart" method="post" class="mt-3">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label for="address" class="form-label mb-1">Địa chỉ nhận hàng <span class="text-danger">*</span></label>
+                                <input id="address" name="address" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành..." required />
+                                <div class="form-text">Vui lòng nhập địa chỉ đầy đủ để giao nhanh hơn.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="coupon" class="form-label mb-1">Mã giảm giá (tuỳ chọn)</label>
+                                <div class="input-group">
+                                    <input id="coupon" name="coupon" class="form-control" placeholder="Nhập mã..." />
+                                    <button type="button" class="btn btn-outline-secondary" id="apply-coupon">Áp dụng</button>
+                                </div>
+                                <small class="text-muted">Ví dụ: FREESHIP, GIAM10… (demo client-side)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="note" class="form-label mb-1">Ghi chú</label>
+                                <textarea id="note" name="note" class="form-control" rows="2" placeholder="Ví dụ: Giao giờ hành chính..."></textarea>
+                            </div>
+
+                            <button class="btn btn-success w-100" type="submit">
+                                <i class="bi bi-bag-check"></i> Đặt hàng
+                            </button>
+
+                            <div id="order-message" class="mt-3">
+                                @if (error != null)
+                                {
+                                    <div class="alert alert-danger">@error</div>
+                                }
+                                @if (toast != null)
+                                {
+                                    <div class="alert alert-success">@toast</div>
+                                }
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    // Nút + / - thay đổi số lượng và submit form Update
+    document.addEventListener('click', function (e) {
+        const minusBtn = e.target.closest('.btn-minus');
+        const plusBtn = e.target.closest('.btn-plus');
+        if (!minusBtn && !plusBtn) return;
+
+        const form = (minusBtn || plusBtn).closest('form');
+        const qtyInput = form.querySelector('input[name="quantity"]');
+        let v = parseInt(qtyInput.value || '1', 10);
+        if (plusBtn) v = v + 1;
+        if (minusBtn) v = Math.max(1, v - 1);
+        qtyInput.value = v;
+        form.submit();
+    }, false);
+
+    // Áp dụng mã giảm giá (demo client-side)
+    document.getElementById('apply-coupon')?.addEventListener('click', function () {
+        const code = (document.getElementById('coupon')?.value || '').trim().toUpperCase();
+        const subtotalEl = document.getElementById('subtotal');
+        const discountEl = document.getElementById('discount-text');
+        const shipEl = document.getElementById('ship-text');
+        const totalEl = document.getElementById('cart-total');
+
+        const parseVND = (s) => Number((s || '').toString().replace(/[^\d]/g, '')) || 0;
+        const fmtVND = (n) => n.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
+
+        let sub = parseVND(subtotalEl?.textContent);
+        let ship = 0, discount = 0;
+
+        if (code === 'GIAM10') discount = Math.min(Math.round(sub * 0.10), 50000);
+        else if (code === 'FREESHIP') ship = 0;
+        else if (code.length > 0) alert('Mã không hợp lệ (demo).');
+
+        if (discountEl) discountEl.textContent = '-' + fmtVND(discount);
+        if (shipEl) shipEl.textContent = ship === 0 ? 'Miễn phí' : fmtVND(ship);
+        if (totalEl) totalEl.textContent = fmtVND(Math.max(0, sub + ship - discount));
+    });
+</script>

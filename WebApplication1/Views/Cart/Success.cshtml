@@ -1,0 +1,64 @@
+﻿@model WebApplication1.Models.Order
+@{
+    ViewData["Title"] = "Đặt hàng thành công";
+    var fmt = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div class="container py-5">
+    <div class="text-center mb-4">
+        <h2>Đặt hàng thành công!</h2>
+        <p class="text-muted">Mã đơn: <strong>#@Model.OrderId</strong></p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Thông tin đơn</h5>
+                    <ul class="list-unstyled mb-4">
+                        <li><strong>Ngày đặt:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</li>
+                        <li><strong>Địa chỉ giao hàng:</strong> @Model.Address</li>
+                        <li><strong>Trạng thái:</strong> @Model.Status</li>
+                        @if (!string.IsNullOrWhiteSpace(Model.Note))
+                        {
+                            <li><strong>Ghi chú:</strong> @Model.Note</li>
+                        }
+                        <li><strong>Tổng tiền:</strong> @string.Format(fmt, "{0:c0}", Model.TotalPrice)</li>
+                    </ul>
+
+                    <h6 class="mb-2">Sản phẩm</h6>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tên món</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-center">SL</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var d in Model.OrderDetails ?? Enumerable.Empty<WebApplication1.Models.OrderDetail>())
+                                {
+                                    var name = d.Food?.Name ?? $"Món #{d.FoodId}";
+                                    var sub = d.Price * d.Quantity;
+                                    <tr>
+                                        <td>@name</td>
+                                        <td class="text-end">@string.Format(fmt, "{0:c0}", d.Price)</td>
+                                        <td class="text-center">@d.Quantity</td>
+                                        <td class="text-end">@string.Format(fmt, "{0:c0}", sub)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="@Url.Action("Index","Home")" class="btn btn-primary">Tiếp tục mua sắm</a>
+                        <a href="@Url.Action("Index","Cart")" class="btn btn-outline-secondary">Xem giỏ hàng</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

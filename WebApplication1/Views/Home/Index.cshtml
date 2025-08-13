@@ -1,0 +1,179 @@
+﻿@using WebApplication1.Models
+@model List<Food>
+@{
+    var categories = ViewData["Categories"] as List<Category> ?? new List<Category>();
+    var foods = (Model ?? new List<Food>()).Where(f => f.IsActive).ToList();
+}
+<main class="main">
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero section light-background">
+
+        <div class="container">
+            <div class="row gy-4 justify-content-center justify-content-lg-between">
+                <div class="col-lg-5 order-2 order-lg-1 d-flex flex-column justify-content-center">
+                    <h1 data-aos="fade-up">Thưởng Thức Món Ăn<br>Ngon & Tốt Cho Sức Khỏe</h1>
+                </div>
+                <div class="col-lg-5 order-1 order-lg-2 hero-img" data-aos="zoom-out">
+                    <img src="~/assets/img/hero-img.png" class="img-fluid animated" alt="Hình món ăn">
+                </div>
+            </div>
+        </div>
+
+    </section><!-- /Hero Section -->
+    <!-- About Section -->
+    <!-- Why Us Section -->
+    <!-- Menu Section -->
+    <!-- Menu Section -->
+    <section id="menu" class="menu section">
+
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+            <h2>Our Menu</h2>
+            <p><span>Check Our</span> <span class="description-title">Yummy Menu</span></p>
+        </div>
+        <!-- End Section Title -->
+
+        <div class="container">
+
+            <!-- Tabs (dynamic categories + All) -->
+            <ul class="nav nav-tabs d-flex justify-content-center" data-aos="fade-up" data-aos-delay="100">
+                <li class="nav-item">
+                    <a class="nav-link active show" data-bs-toggle="tab" data-bs-target="#menu-all">
+                        <h4>Tất cả</h4>
+                    </a>
+                </li>
+                @foreach (var c in categories)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#menu-cat-@c.Id">
+                            <h4>@c.CategoryName</h4>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="tab-content" data-aos="fade-up" data-aos-delay="200">
+                <!-- All -->
+                <div class="tab-pane fade active show" id="menu-all">
+                    <div class="tab-header text-center">
+                        <p>Menu</p><h3>Tất cả món</h3>
+                    </div>
+                    <div class="row gy-5">
+                        @foreach (var f in foods)
+                        {
+                            <div class="col-lg-4 menu-item">
+                                <a href="@f.ImageUrl" class="glightbox">
+                                    <img src="@f.ImageUrl" class="menu-img img-fluid" alt="@f.Name">
+                                </a>
+                                <h4>@f.Name</h4>
+                                @if (!string.IsNullOrWhiteSpace(f.Description))
+                                {
+                                    <p class="ingredients">@f.Description</p>
+                                }
+                                <p class="price">
+                                    @string.Format(new System.Globalization.CultureInfo("vi-VN"), "{0:c0}", f.Price)
+                                </p>
+                                <button class="btn btn-primary add-to-cart"
+                                        data-id="@f.FoodId"
+                                        data-name="@f.Name"
+                                        data-price="@f.Price"
+                                        data-img="@f.ImageUrl">
+                                    Thêm vào giỏ
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Per-category -->
+                @foreach (var c in categories)
+                {
+                    var list = foods.Where(x => x.CategoryId == c.Id).ToList();
+                    <div class="tab-pane fade" id="menu-cat-@c.Id">
+                        <div class="tab-header text-center">
+                            <p>Menu</p><h3>@c.CategoryName</h3>
+                        </div>
+                        <div class="row gy-5">
+                            @if (list.Any())
+                            {
+                                foreach (var f in list)
+                                {
+                                    <div class="col-lg-4 menu-item">
+                                        <a href="@f.ImageUrl" class="glightbox">
+                                            <img src="@f.ImageUrl" class="menu-img img-fluid" alt="@f.Name">
+                                        </a>
+                                        <h4>@f.Name</h4>
+                                        @if (!string.IsNullOrWhiteSpace(f.Description))
+                                        {
+                                            <p class="ingredients">@f.Description</p>
+                                        }
+                                        <p class="price">
+                                            @string.Format(new System.Globalization.CultureInfo("vi-VN"), "{0:c0}", f.Price)
+                                        </p>
+                                        <button class="btn btn-primary add-to-cart"
+                                                data-id="@f.FoodId"
+                                                data-name="@f.Name"
+                                                data-price="@f.Price"
+                                                data-img="@f.ImageUrl">
+                                            Thêm vào giỏ
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="col-12"><div class="alert alert-warning text-center">Chưa có món trong danh mục này.</div></div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <form id="af-cart" method="post">@Html.AntiForgeryToken()</form>
+        </div>
+
+    </section>
+    <script>
+        function getToken() {
+            const t = document.querySelector('#af-cart input[name="__RequestVerificationToken"]');
+            return t ? t.value : '';
+        }
+
+        async function addToCart(foodId, qty = 1) {
+            const res = await fetch('@Url.Action("Add", "Cart")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest' 
+                },
+                body: new URLSearchParams({
+                    id: foodId,
+                    quantity: qty,
+                    __RequestVerificationToken: getToken()
+                })
+            });
+
+            if (!res.ok) {
+                alert('Không thể thêm vào giỏ.');
+                return;
+            }
+            const data = await res.json();
+            if (data.ok) {
+                const badge = document.querySelector('#cart-count, .cart-count');
+                if (badge) badge.textContent = data.count;
+                alert('Đã thêm vào giỏ!');
+            } else {
+                alert(data.message || 'Có lỗi xảy ra.');
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.add-to-cart');
+            if (!btn) return;
+
+            const id = btn.dataset.id;
+            btn.disabled = true; // chống double-click
+            addToCart(id, 1).finally(() => { btn.disabled = false; });
+        }, false);
+    </script>
+</main>

@@ -1,0 +1,146 @@
+﻿@using WebApplication1.Models
+@{
+    ViewData["Title"] = "Categories";
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+
+    var categories = ViewData["Categories"] as List<Category> ?? new List<Category>();
+    string notification = TempData["updateItem"] as string;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-6 d-flex align-items-stretch">
+            <div class="card w-100">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6">
+                            <h5 class="card-title fw-600 mb-4">Danh sách thể loại</h5>
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            @using (Html.BeginForm("IndexPost", "Categories", FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <div class="searchForm d-flex gap-2">
+                                    <input class="form-control" name="name" placeholder="Tìm kiếm ..." />
+                                    <button type="submit" class="btn btn-default btn-outline-secondary">
+                                        <i class="ti ti-search"></i> Tìm
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-post text-nowrap mb-0 align-middle">
+                            <thead class="text-dark fs-4">
+                                <tr>
+                                    <th><h6 class="fw-600 mb-0">ID</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Tên thể loại</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Lệnh</h6></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in categories)
+                                {
+                                    <tr>
+                                        <td><h6 class="fw-600 mb-0">@item.Id</h6></td>
+                                        <td><h6 class="fw-600 mb-1">@item.CategoryName</h6></td>
+                                        <td>
+                                            <button type="button" class="btn btn-primary" onclick="Update(@item.Id)">Sửa</button>
+
+                                            @using (Html.BeginForm("Delete", "Categories", FormMethod.Post, new { @class = "d-inline" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-danger" onclick="return confirm('Xóa thể loại #@item.Id ?');">Xóa</button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-tools p-5 pt-0 pb-0 m-auto" id="pagination">
+                    @{
+                        int page = ViewBag.Page ?? 1;
+                        int noOfPages = ViewBag.NoOfPages ?? 1;
+                        int displayPage = ViewBag.DisplayPage ?? 0;
+                        int prevPage = Math.Max(1, page - 1);
+                        int nextPage = Math.Min(noOfPages, page + 1);
+                    }
+                    @if (categories.Count > 0)
+                    {
+                        <ul class="pagination pagination-sm">
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Categories", new { area="PrivateSite", page = prevPage })">&laquo;</a>
+                            </li>
+                            @for (int i = displayPage; i < noOfPages; i++)
+                            {
+                                var p = i + 1;
+                                <li class="page-item">
+                                    <a class="page-link @(p == page ? "active" : "")" href="@Url.Action("Index","Categories", new { area="PrivateSite", page = p })">@p</a>
+                                </li>
+                            }
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Categories", new { area="PrivateSite", page = nextPage })">&raquo;</a>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <h5 class="text-center">Hiện không có dữ liệu</h5>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title fw-semibold mb-4">Thể loại</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(notification))
+                            {
+                                <h6 class="mb-3 text-success fw-bold">@notification</h6>
+                            }
+
+                            @using (Html.BeginForm("Insert", "Categories", FormMethod.Post, new { @id = "id_formff" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <p id="notification_update" class="text-success fw-bold d-none"></p>
+                                    <input type="hidden" name="Id" id="categoryId" />
+                                    <label class="form-label">Tên thể loại</label>
+                                    <input type="text" class="form-control" placeholder="Nhập tên loại" name="CategoryName" id="categoryName" required />
+                                </div>
+
+                                <button class="btn btn-primary mt-2" type="submit">Lưu</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function Update(id) {
+        fetch(`/api/categories/update/${id}`)
+            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+            .then(data => {
+                if (!data?.success) return alert('Tải dữ liệu sửa thất bại');
+                document.getElementById('categoryId').value = data.data.categoryId;
+                document.getElementById('categoryName').value = data.data.categoryName;
+
+                const note = document.getElementById('notification_update');
+                note.classList.remove('d-none');
+                note.innerText = "Đang sửa mã: " + id;
+            })
+            .catch(() => alert('Lỗi tải dữ liệu'));
+    }
+</script>

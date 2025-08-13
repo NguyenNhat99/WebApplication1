@@ -1,0 +1,194 @@
+﻿@using WebApplication1.Models
+@model List<Order>
+
+@{
+    ViewData["Title"] = "Quản lý đơn hàng";
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+
+    int page = ViewBag.Page ?? 1;
+    int noOfPages = ViewBag.NoOfPages ?? 1;
+    int displayPage = ViewBag.DisplayPage ?? 1;
+    string search = ViewBag.Search as string ?? "";
+    string status = ViewBag.Status as string ?? "all";
+    var fmt = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 d-flex align-items-stretch">
+            <div class="card w-100">
+                <div class="card-body p-4">
+                    <div class="row g-2">
+                        <div class="col-lg-6 col-md-6">
+                            <h5 class="card-title fw-600 mb-0">Quản lý đơn hàng</h5>
+                        </div>
+                        <div class="col-lg-6 col-md-6">
+                            @using (Html.BeginForm("Index", "Orders", FormMethod.Get, new { area = "PrivateSite" }))
+                            {
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <select name="status" class="form-select w-auto">
+                                        <option value="all" selected="@(status=="all")">Tất cả</option>
+                                        <option value="Pending" selected="@(status=="Pending")">Pending</option>
+                                        <option value="Completed" selected="@(status=="Completed")">Completed</option>
+                                        <option value="Cancelled" selected="@(status=="Cancelled")">Cancelled</option>
+                                    </select>
+                                    <input class="form-control" name="q" value="@search" placeholder="Tìm mã đơn, khách, địa chỉ..." />
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="ti ti-search"></i> Tìm
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-post text-nowrap mb-0 align-middle">
+                            <thead class="text-dark fs-4">
+                                <tr>
+                                    <th><h6 class="fw-600 mb-0">Mã</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Khách hàng</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Địa chỉ</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Ngày đặt</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Tổng tiền</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Trạng thái</h6></th>
+                                    <th><h6 class="fw-600 mb-0">Lệnh</h6></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var o in Model)
+                                    {
+                                        var badge = o.Status == "Completed" ? "bg-success"
+                                        : o.Status == "Cancelled" ? "bg-danger"
+                                        : "bg-warning";
+                                        <tr id="row-@o.OrderId">
+                                            <td><h6 class="fw-600 mb-0">#@o.OrderId</h6></td>
+                                            <td>
+                                                <div class="d-flex flex-column">
+                                                    <span class="fw-600">@(o.User?.FullName ?? "Khách #"+o.UserId)</span>
+                                                    <small class="text-muted">@o.User?.UserName</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <small>@o.Address</small>
+                                                @if (!string.IsNullOrWhiteSpace(o.Note))
+                                                {
+                                                    <div><small class="text-muted">Note: @o.Note</small></div>
+                                                }
+                                            </td>
+                                            <td>@o.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@string.Format(fmt, "{0:c0}", o.TotalPrice)</td>
+                                            <td>
+                                                <span class="badge @badge rounded-3 fw-600" id="status-@o.OrderId">@o.Status</span>
+                                            </td>
+                                            <td class="d-flex gap-2">
+                                                <a href="@Url.Action("Detail","Orders", new { area="PrivateSite", id = o.OrderId })" class="btn btn-primary">
+                                                    Chi tiết
+                                                </a>
+
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-outline-success" onclick="updateStatus(@o.OrderId,'Completed')">Hoàn tất</button>
+                                                    <button type="button" class="btn btn-outline-warning" onclick="updateStatus(@o.OrderId,'Pending')">Pending</button>
+                                                    <button type="button" class="btn btn-outline-danger" onclick="updateStatus(@o.OrderId,'Cancelled')">Huỷ</button>
+                                                </div>
+
+                                                <button type="button" class="btn btn-danger"
+                                                        onclick="deleteOrder(@o.OrderId)">
+                                                    Xoá
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5">Không có đơn hàng.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-tools p-5 pt-0 pb-4 m-auto" id="pagination">
+                    @{
+                        int prevPage = page - 1; if (prevPage <= 0) prevPage = 1;
+                        int nextPage = page + 1; if (nextPage > noOfPages) nextPage = noOfPages;
+                    }
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        <ul class="pagination pagination-sm">
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Orders", new { area="PrivateSite", page = prevPage, q = search, status })">&laquo;</a>
+                            </li>
+                            @for (int i = Math.Max(1, page - 3); i <= Math.Min(noOfPages, page + 3); i++)
+                            {
+                                if (i == page)
+                                {
+                                    <li class="page-item active"><a href="@Url.Action("Index","Orders", new { area="PrivateSite", page = i, q = search, status })" class="page-link">@i</a></li>
+                                }
+                                else
+                                {
+                                    <li class="page-item"><a href="@Url.Action("Index","Orders", new { area="PrivateSite", page = i, q = search, status })" class="page-link">@i</a></li>
+                                }
+                            }
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index","Orders", new { area="PrivateSite", page = nextPage, q = search, status })">&raquo;</a>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <h5 class="text-center">Chưa có đơn hàng</h5>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="af-form" method="post">@Html.AntiForgeryToken()</form>
+
+<script>
+    function token() {
+        const t = document.querySelector('#af-form input[name="__RequestVerificationToken"]');
+        return t ? t.value : '';
+    }
+
+    async function updateStatus(id, status) {
+        if (!confirm(`Cập nhật đơn #${id} → ${status}?`)) return;
+        const res = await fetch('@Url.Action("UpdateStatus", "Orders", new { area = "PrivateSite" })', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: new URLSearchParams({ id, status, __RequestVerificationToken: token() })
+        });
+        if (!res.ok) return alert('Cập nhật thất bại');
+        const data = await res.json();
+        if (!data.ok) return alert(data.message || 'Cập nhật thất bại');
+
+        const badge = document.getElementById('status-' + id);
+        if (badge) {
+            badge.classList.remove('bg-success', 'bg-danger', 'bg-warning');
+            if (data.status === 'Completed') badge.classList.add('bg-success');
+            else if (data.status === 'Cancelled') badge.classList.add('bg-danger');
+            else badge.classList.add('bg-warning');
+            badge.textContent = data.status;
+        }
+    }
+
+    async function deleteOrder(id) {
+        if (!confirm(`Xoá đơn #${id}? (chỉ áp dụng đơn đã huỷ)`)) return;
+        const res = await fetch('@Url.Action("Delete", "Orders", new { area = "PrivateSite" })', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: new URLSearchParams({ id, __RequestVerificationToken: token() })
+        });
+        if (!res.ok) return alert('Xoá thất bại');
+        const data = await res.json();
+        if (!data.ok) return alert(data.message || 'Không thể xoá');
+
+        document.getElementById('row-' + id)?.remove();
+    }
+</script>

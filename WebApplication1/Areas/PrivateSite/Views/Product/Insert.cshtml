@@ -1,0 +1,163 @@
+﻿@using Microsoft.AspNetCore.Html
+@using WebApplication1.Models
+@model WebApplication1.Models.Food
+
+@{
+    Layout = "~/Areas/PrivateSite/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Thêm sản phẩm";
+    var categories = ViewData["Categories"] as IEnumerable<Category> ?? Enumerable.Empty<Category>();
+    // Lấy lỗi tổng & lỗi theo field
+    var errors = ViewBag.Errors as List<string> ?? new List<string>();
+    var fieldErrors = ViewBag.FieldErrors as Dictionary<string, List<string>>
+                      ?? new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+    string InvalidCss(string field) => fieldErrors.ContainsKey(field) ? "is-invalid" : "";
+    IHtmlContent FieldErrorBlock(string field)
+    {
+        if (fieldErrors.TryGetValue(field, out var list) && list.Any())
+        {
+            return new HtmlString($"<div class=\"invalid-feedback d-block\">{string.Join("<br/>", list)}</div>");
+        }
+        return HtmlString.Empty;
+    }
+}
+
+<link href="~/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<link href="~/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+<style>
+    .card {
+        box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        border-radius: 12px;
+    }
+
+    .form-label {
+        font-weight: 600;
+    }
+
+    .img-thumb {
+        max-width: 150px;
+        border-radius: .5rem;
+        margin: .25rem;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h4 mb-0">Thêm sản phẩm</h1>
+        <a asp-area="PrivateSite" asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Về Dashboard
+        </a>
+    </div>
+
+    @* ALert lỗi tổng *@
+    @if (errors.Any())
+    {
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">Vui lòng kiểm tra lại thông tin:</div>
+            <ul class="mb-0">
+                @foreach (var e in errors)
+                {
+                    <li>@e</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+
+            @using (Html.BeginForm("Insert", "Product", FormMethod.Post, new { enctype = "multipart/form-data", novalidate = "novalidate" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="Name" class="form-label">Tên sản phẩm</label>
+                        <input id="Name" name="Name"
+                               class="form-control @InvalidCss("Name")"
+                               placeholder="Ví dụ: Burger Bò Phô Mai"
+                               required maxlength="200"
+                               value="@(Model?.Name ?? "")" />
+                        @FieldErrorBlock("Name")
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="Price" class="form-label">Giá (VNĐ)</label>
+                        <input id="Price" name="Price" type="number"
+                               class="form-control @InvalidCss("Price")"
+                               placeholder="45000" min="0" step="1" required
+                               value="@(Model?.Price ?? 0)" />
+                        @FieldErrorBlock("Price")
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label d-block">Trạng thái</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" @(Model?.IsActive == true ? "checked" : "") />
+                            <label class="form-check-label" for="IsActive">Hiển thị / bán</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="CategoryId" class="form-label">Loại</label>
+                        <select id="CategoryId" name="CategoryId"
+                                class="form-select @InvalidCss("CategoryId")">
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var c in categories)
+                            {
+                                <option value="@c.Id" @(Model?.CategoryId == c.Id ? "selected" : "")>
+                                    @c.CategoryName
+                                </option>
+                            }
+                        </select>
+                        @FieldErrorBlock("CategoryId")
+                    </div>
+
+                    <div class="col-12">
+                        <label for="Description" class="form-label">Mô tả</label>
+                        <textarea id="Description" name="Description" rows="5" class="form-control"
+                                  placeholder="Mô tả sản phẩm...">@Model?.Description</textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="inputSingleFile" class="form-label">Hình đại diện</label>
+                        <input type="file" name="avatar" id="inputSingleFile"
+                               class="form-control @InvalidCss("avatar")" accept="image/*" />
+                        @FieldErrorBlock("avatar")
+                        <div id="imagePreviewSingle" class="mt-2">
+                            @if (!string.IsNullOrEmpty(Model?.ImageUrl))
+                            {
+                                <img src="@Model.ImageUrl" class="img-thumb" />
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Lưu
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">Nhập lại</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview ảnh
+    document.getElementById('inputSingleFile')?.addEventListener('change', function () {
+        const wrap = document.getElementById('imagePreviewSingle');
+        wrap.innerHTML = '';
+        const f = this.files?.[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'img-thumb';
+            wrap.appendChild(img);
+        };
+        reader.readAsDataURL(f);
+    });
+</script>
